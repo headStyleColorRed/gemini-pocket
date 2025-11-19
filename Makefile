@@ -54,16 +54,6 @@ clean:
 	npm run clean
 	cd packages/a2a-server && npm run clean
 
-
-
-# Makefile for gemini-cli
-install:
-	npm install
-
-build:
-	npm run build
-
-
 build-all:
 	npm run build:all
 
@@ -78,9 +68,6 @@ format:
 
 preflight:
 	npm run preflight
-
-clean:
-	npm run clean
 
 start:
 	npm run start
