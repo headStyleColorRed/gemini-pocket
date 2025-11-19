@@ -648,12 +648,33 @@ export class Task {
       case GeminiEventType.Finished:
         logger.info(`[Task ${this.id}] Agent finished its turn.`);
         break;
-      case GeminiEventType.Error:
-      default: {
-        // Block scope for lexical declaration
-        const errorEvent = event as ServerGeminiErrorEvent; // Type assertion
+      case GeminiEventType.Retry:
+        logger.info('[Task] Received retry event from LLM stream.');
+        break;
+      case GeminiEventType.MaxSessionTurns:
+        logger.warn('[Task] Received max session turns event from LLM stream.');
+        break;
+      case GeminiEventType.LoopDetected:
+        logger.warn('[Task] Received loop detected event from LLM stream.');
+        break;
+      case GeminiEventType.ContextWindowWillOverflow:
+        logger.warn(
+          '[Task] Received context window will overflow event from LLM stream.',
+        );
+        break;
+      case GeminiEventType.InvalidStream:
+        logger.warn('[Task] Received invalid stream event from LLM stream.');
+        break;
+      case GeminiEventType.ModelInfo:
+        logger.info(
+          '[Task] Received model info event from LLM stream:',
+          (event as { value: string }).value,
+        );
+        break;
+      case GeminiEventType.Error: {
+        const errorEvent = event as ServerGeminiErrorEvent;
         const errorMessage =
-          errorEvent.value?.error.message ?? 'Unknown error from LLM stream';
+          errorEvent.value?.error?.message ?? 'Unknown error from LLM stream';
         logger.error(
           '[Task] Received error event from LLM stream:',
           errorMessage,
@@ -672,6 +693,13 @@ export class Task {
           false,
           errMessage,
           traceId,
+        );
+        break;
+      }
+      default: {
+        // Unknown event type - log warning but don't treat as fatal error
+        logger.warn(
+          `[Task] Received unknown event type from LLM stream: ${(event as { type: string }).type}`,
         );
         break;
       }
