@@ -1042,7 +1042,46 @@ describe('GeminiChat', () => {
       );
     });
 
-    it('should use thinkingBudget and remove thinkingLevel for non-gemini-3 models', async () => {
+    it('should use thinkingBudget and remove thinkingLevel for non-gemini-3 models that support thinking', async () => {
+      const response = (async function* () {
+        yield {
+          candidates: [
+            {
+              content: { parts: [{ text: 'response' }], role: 'model' },
+              finishReason: 'STOP',
+            },
+          ],
+        } as unknown as GenerateContentResponse;
+      })();
+      vi.mocked(mockContentGenerator.generateContentStream).mockResolvedValue(
+        response,
+      );
+
+      const stream = await chat.sendMessageStream(
+        { model: 'gemini-2.5-flash' },
+        'hello',
+        'prompt-id-thinking-budget',
+        new AbortController().signal,
+      );
+      for await (const _ of stream) {
+        // consume stream
+      }
+
+      expect(mockContentGenerator.generateContentStream).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: 'gemini-2.5-flash',
+          config: expect.objectContaining({
+            thinkingConfig: {
+              thinkingBudget: DEFAULT_THINKING_MODE,
+              thinkingLevel: undefined,
+            },
+          }),
+        }),
+        'prompt-id-thinking-budget',
+      );
+    });
+
+    it('should remove thinkingConfig for gemini-2.0 models that do not support thinking', async () => {
       const response = (async function* () {
         yield {
           candidates: [
@@ -1060,7 +1099,7 @@ describe('GeminiChat', () => {
       const stream = await chat.sendMessageStream(
         { model: 'gemini-2.0-flash' },
         'hello',
-        'prompt-id-thinking-budget',
+        'prompt-id-no-thinking',
         new AbortController().signal,
       );
       for await (const _ of stream) {
@@ -1070,14 +1109,11 @@ describe('GeminiChat', () => {
       expect(mockContentGenerator.generateContentStream).toHaveBeenCalledWith(
         expect.objectContaining({
           model: 'gemini-2.0-flash',
-          config: expect.objectContaining({
-            thinkingConfig: {
-              thinkingBudget: DEFAULT_THINKING_MODE,
-              thinkingLevel: undefined,
-            },
+          config: expect.not.objectContaining({
+            thinkingConfig: expect.anything(),
           }),
         }),
-        'prompt-id-thinking-budget',
+        'prompt-id-no-thinking',
       );
     });
   });

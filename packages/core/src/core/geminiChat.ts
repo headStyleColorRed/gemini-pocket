@@ -444,6 +444,12 @@ export class GeminiChat {
           thinkingLevel: ThinkingLevel.HIGH,
         };
         delete config.thinkingConfig?.thinkingBudget;
+      } else if (modelToUse.startsWith('gemini-2.0')) {
+        // gemini-2.0 models don't support thinking at all
+        // Explicitly remove thinkingConfig to prevent API errors
+        delete config.thinkingConfig;
+        // Ensure it's not in the final config by setting to undefined
+        config.thinkingConfig = undefined;
       } else {
         // The `gemini-3` configs use thinkingLevel, so we have to invert the
         // change above.
